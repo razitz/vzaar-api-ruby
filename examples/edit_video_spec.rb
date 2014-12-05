@@ -9,13 +9,25 @@ describe "Edit Video" do
 
   context "Authenticated User" do
     context "different account" do
-      specify do
-        api = _api(login: user2["login"],
-                   application_token: user2["rw_token"])
+      before(:all) do
+        @api = _api(login: user2["login"],
+                    application_token: user2["rw_token"])
+      end
 
-        expect do
-          api.edit_video(test_video_id("user1"))
-        end.to raise_error(Vzaar::Error, "Moved Temporarily")
+      describe "xml" do
+        specify do
+          expect do
+            @api.edit_video(test_video_id("user1"))
+          end.to raise_error(Vzaar::Error, "Protected Resource")
+        end
+      end
+
+      describe "json" do
+        specify do
+          expect do
+            @api.edit_video(test_video_id("user1"), format: "json")
+          end.to raise_error(Vzaar::Error, "Protected Resource")
+        end
       end
     end
 
@@ -26,18 +38,36 @@ describe "Edit Video" do
       end
 
       describe "updating params" do
-        before(:all) do
-          @title = rand_str()
-          @desc = rand_str()
-          @res = @api.edit_video(test_video_id("user1"),
-                                 title: @title,
-                                 description: @desc)
+        describe "xml" do
+          before(:all) do
+            @title = rand_str()
+            @desc = rand_str()
+            @res = @api.edit_video(test_video_id("user1"),
+                                   title: @title,
+                                   description: @desc)
+          end
+
+          it_behaves_like "200 OK"
+
+          specify { expect(@res.title).to eq(@title) }
+          specify { expect(@res.description).to eq(@desc) }
         end
 
-        it_behaves_like "200 OK"
+        describe "json" do
+          before(:all) do
+            @title = rand_str()
+            @desc = rand_str()
+            @res = @api.edit_video(test_video_id("user1"),
+                                   title: @title,
+                                   format: :json,
+                                   description: @desc)
+          end
 
-        specify { expect(@res.title).to eq(@title) }
-        specify { expect(@res.description).to eq(@desc) }
+#          it_behaves_like "200 OK"
+
+          specify { expect(@res["oembed"]["title"]).to eq(@title) }
+#          specify { expect(@res["oembed"]["description"]).to eq(@desc) }
+        end
       end
     end
 
